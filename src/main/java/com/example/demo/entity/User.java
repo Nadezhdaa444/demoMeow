@@ -2,10 +2,7 @@ package com.example.demo.entity;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 import java.util.Set;
@@ -14,6 +11,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Builder
 @Table(schema = "users_schema", name = "t_users")
 public class User {
     @Id
@@ -32,8 +30,8 @@ public class User {
 
     @ManyToMany
     @JoinTable(
-            schema = "users_schema",  // Add schema
-            name = "t_users_hobbies",  // Match actual table name
+            schema = "users_schema",
+            name = "t_users_hobbies",
             joinColumns = @JoinColumn(name = "c_user_id"),
             inverseJoinColumns = @JoinColumn(name = "c_hobby_id")
     )
