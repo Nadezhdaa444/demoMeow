@@ -1,30 +1,38 @@
 package com.example.demo.config;
 
+import com.example.demo.config.JwtUtils;
 import com.example.demo.entity.Credentials;
 import com.example.demo.repositories.CredentialsRepository;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public JwtUtils jwtUtils() {
+        return new JwtUtils();
     }
 
     @Bean
@@ -32,32 +40,31 @@ public class SecurityConfig {
         return username -> {
             Credentials credentials = credentialsRepository.findByUserName(username)
                     .orElseThrow(() -> new UsernameNotFoundException(username));
-            return User.builder()
-                    .username(username)
+            return org.springframework.security.core.userdetails.User
+                    .builder()
+                    .username(credentials.getUsername())
                     .password(credentials.getPassword())
                     .roles(credentials.getRole().getName().replace("ROLE_", ""))
                     .build();
         };
-
     }
-
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtUtils jwtUtils,
+                                           CredentialsRepository credentialsRepository) throws Exception {
+
+        org.example.relations.config.JwtAuthenticationFilter jwtFilter = new org.example.relations.config.JwtAuthenticationFilter(jwtUtils, userDetailsService(credentialsRepository));
+
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources", "/webjars").permitAll()
-                        .requestMatchers("/api/users/**").hasRole("USER")
+                        .requestMatchers("/api/auth/register","/api/auth/login", "/swagger-ui/**", "/v3/api-docs/**","/swagger-resources","/webjars").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults())
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                            response.getWriter().write("Logout successful");
-                        })
-                );
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
+
 }

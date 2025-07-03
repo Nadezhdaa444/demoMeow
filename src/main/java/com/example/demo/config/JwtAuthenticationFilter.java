@@ -1,4 +1,4 @@
-package com.example.demo.config;
+package org.example.relations.config;
 
 import com.example.demo.config.JwtUtils;
 import jakarta.servlet.FilterChain;
@@ -16,6 +16,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
+
     public JwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsService uds) {
         this.jwtUtils = jwtUtils;
         this.userDetailsService = uds;
@@ -24,6 +25,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
@@ -35,6 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
         filterChain.doFilter(request, response);
     }
 }

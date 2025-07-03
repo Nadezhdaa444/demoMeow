@@ -12,6 +12,7 @@ import com.example.demo.repositories.CredentialsRepository;
 
 import com.example.demo.repositories.RoleRepository;
 import com.example.demo.repositories.UserRepository;
+
 import com.example.demo.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
